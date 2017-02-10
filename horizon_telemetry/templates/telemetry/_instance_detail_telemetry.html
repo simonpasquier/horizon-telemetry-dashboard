@@ -1,0 +1,132 @@
+{% load i18n sizeformat %}
+{% load url from future %}
+
+<div class="row">
+
+<div class="col-md-12">
+  <h3>{% trans "Instance Telemetry" %}</h3>
+</div>
+
+{% comment %}
+<h4>{% trans 'Memory Utilisation' %}</h4>
+<div id="graph_mem_usage"></div>
+{% endcomment %}
+
+<div class="col-md-2">
+  <h4>{% trans 'CPU Utilisation' %}</h4>
+</div>
+<div class="col-md-10">
+  <div id="graph_cpu_usage"></div>
+</div>
+<div class="col-md-2">
+  <h4>{% trans 'Network In' %}</h4>
+</div>
+<div class="col-md-10">
+  <div id="graph_net_in_usage"></div>
+</div>
+<div class="col-md-2">
+  <h4>{% trans 'Network Out' %}</h4>
+</div>
+<div class="col-md-10">
+  <div id="graph_net_out_usage"></div>
+</div>
+<div class="col-md-2">
+  <h4>{% trans 'Disk Write' %}</h4>
+</div>
+<div class="col-md-10">
+  <div id="graph_disk_write_usage"></div>
+</div>
+<div class="col-md-2">
+  <h4>{% trans 'Disk Read' %}</h4>
+</div>
+<div class="col-md-10">
+  <div id="graph_disk_read_usage"></div>
+</div>
+
+</div>
+<script type="text/javascript">
+
+$(function() {
+
+var graphite_endpoint = "{% url 'horizon:telemetry:overview:render_graphite' %}";
+
+
+
+function get_context() {
+    var context = cubism.context()
+                        .step(1 * 60 * 1000) // 1 minute
+                        .size(1024); // Number of data points
+                       // .stop();   // Fetching from a static data source; don't update values
+    return context;    
+}
+
+
+function get_graphite(graphite_endpoint) {
+    return get_context().graphite(graphite_endpoint);
+}
+
+
+function init_cubism(graphite_endpoint){
+    /*
+      inicialization of horizon-cubism
+    */
+
+    var context = get_context();
+    var graphite = context.graphite = get_graphite(graphite_endpoint)
+    var horizon = context.horizon();
+
+    horizon = horizon.metric(graphite.metric);//.height(100)//.shift( - 0 * 24 * 60 * 60 * 1000 );
+
+    // hide metric name
+    horizon.title(function(d){return ""});
+
+    return horizon;    
+}
+
+function draw_axis(selector) {
+
+	d3.select(selector)                 // Select the div on which we want to act           
+	.selectAll(".axis")              // This is a standard D3 mechanism to bind data
+	.data(["top"])                   // to a graph. In this case we're binding the axes
+	.enter()                         // "top" and "bottom". Create two divs and give them
+	.append("div")                   // the classes top axis and bottom axis respectively. 
+	.attr("class", function(d) {      
+	  return d + " axis";           
+	})                             
+	.each(function(d) {              // For each of these axes, draw the axes with 4 
+	  d3.select(this)              // intervals and place them in their proper places.
+	    .call(get_context().axis()       // 4 ticks gives us an hourly axis.
+	    .ticks(4).orient(d));      
+	});
+}
+
+function draw_graph(selector, metric) {
+
+	draw_axis(selector);
+
+	d3.select(selector)                 
+	  .selectAll(".horizon")        
+	  .data([metric])
+	  .enter()                         
+	  .insert("div", ".bottom")        // Insert the graph in a div. Turn the div into  
+	  .attr("class", "horizon")        // a horizon graph and format to 2 decimals places.
+	  .call(horizon);
+}
+
+
+try {
+	var horizon = init_cubism(graphite_endpoint);
+	draw_graph("#graph_cpu_usage", "sumSeries(asPercent(default_prd.{{ instance.id }}.libvirt.virt_vcpu.*, default_prd.{{ instance.id }}.libvirt.virt_cpu_total))");
+	draw_graph("#graph_net_in_usage", "nonNegativeDerivative(default_prd.{{ instance.id }}.libvirt.if_octets.*.rx)");
+	draw_graph("#graph_net_out_usage", "nonNegativeDerivative(default_prd.{{ instance.id }}.libvirt.if_octets.*.tx)");
+	draw_graph("#graph_disk_write_usage", "nonNegativeDerivative(default_prd.{{ instance.id }}.libvirt.disk_ops.*.write)");
+	draw_graph("#graph_disk_read_usage", "nonNegativeDerivative(default_prd.{{ instance.id }}.libvirt.disk_ops.*.read)");
+}
+catch(err) {
+	console.error(err);
+}
+
+});
+
+
+</script>

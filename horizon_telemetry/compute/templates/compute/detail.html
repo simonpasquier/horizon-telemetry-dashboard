@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block js %}
+  {% include "horizon/_scripts.html" %}
+{% endblock %}
+
+{% block title %}{% trans "Compute Details" %}{% endblock %}
+
+{% block page_header %}
+{% include "horizon/common/_page_header.html" with title=_("Compute Details") %}
+  <h2 class="telemetry_details_heading">{{node}}</h2>
+{% endblock page_header %}
+
+{% block main %}
+
+<div class="row">
+  <div class="col-md-12">
+    {% include "telemetry/_range_form.html" %}
+  </div>
+  <div class="col-md-12">
+    <div id="cpu_chart" class="nvd3_chart">
+      <h2>CPU utilisation</h2>
+      <svg></svg>
+    </div>
+  </div>
+  <div class="col-md-12">
+    <div id="mem_chart" class="nvd3_chart">
+      <h2>Memory utilisation</h2>
+      <svg></svg>
+    </div>
+  </div>
+  <div class="col-md-12">
+    <div id="hdd_chart" class="nvd3_chart">
+      <h2>HDD I/O operations</h2>
+      <svg></svg>
+    </div>
+  </div>
+  <div class="col-md-12">
+    <div id="net_chart" class="nvd3_chart">
+      <h2>Network I/O operations</h2>
+      <svg></svg>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+
+$( document ).ready(function() {
+
+  function render_graph(cpu_data) {
+    nv.addGraph(function() {
+      var cpu_chart = nv.models.stackedAreaChart()
+                    .margin({right:100})
+                    .height(300)
+                    .x(function(d) { return d[1] })   //We can modify the data accessor functions...
+                    .y(function(d) { return d[0] })   //...in case your data is formatted differently.
+                    .useInteractiveGuideline(true)    //Tooltips which show all data points. Very nice!
+                    .rightAlignYAxis(true)      //Let's move the y-axis to the right side.
+                    .showControls(false)       //Allow user to choose 'Stacked', 'Stream', 'Expanded' mode.
+                    .clipEdge(true);
+
+      //Format x-axis labels with custom function.
+      cpu_chart.xAxis
+          .tickFormat(function(d) {
+            return d3.time.format('{{ tickFormat }}')(new Date(d * 1000))
+      });
+
+      cpu_chart.yAxis
+          .tickFormat(function(d) { return d3.format(",.0f")(d) + "%"; });;
+
+      d3.select('#cpu_chart > svg')
+        .datum(cpu_data)
+        .call(cpu_chart);
+
+      nv.utils.windowResize(cpu_chart.update);
+
+      return cpu_chart;
+    });
+    }
+  render_graph({{ cpu_data|safe }});
+
+});
+</script>
+
+
+<script type="text/javascript">
+
+$( document ).ready(function() {
+  function render_graph(mem_data) {
+    nv.addGraph(function() {
+      var mem_chart = nv.models.stackedAreaChart()
+                    .margin({right:100})
+                    .height(300)
+                    .x(function(d) { return d[1] })   //We can modify the data accessor functions...
+                    .y(function(d) { return d[0] })   //...in case your data is formatted differently.
+                    .useInteractiveGuideline(true)    //Tooltips which show all data points. Very nice!
+                    .rightAlignYAxis(true)      //Let's move the y-axis to the right side.
+                    .showControls(false)       //Allow user to choose 'Stacked', 'Stream', 'Expanded' mode.
+                    .clipEdge(true);
+
+      //Format x-axis labels with custom function.
+      mem_chart.xAxis
+          .tickFormat(function(d) {
+            return d3.time.format('{{ tickFormat }}')(new Date(d * 1000))
+      });
+
+      mem_chart.yAxis
+          .tickFormat(function(d) { return d3.format(",.0f")(d) + "%"; });;
+
+      d3.select('#mem_chart > svg')
+        .datum(mem_data)
+        .call(mem_chart);
+
+      nv.utils.windowResize(mem_chart.update);
+
+      return mem_chart;
+    });
+    }
+  render_graph({{ mem_data|safe }});
+
+});
+</script>
+
+<script type="text/javascript">
+
+$( document ).ready(function() {
+  function render_graph(hdd_data) {
+    nv.addGraph(function() {
+      var hdd_chart = nv.models.lineChart()
+                    .margin({right:100})
+                    .height(300)
+                    .x(function(d) { return d[1] })   //We can modify the data accessor functions...
+                    .y(function(d) { return d[0] })   //...in case your data is formatted differently.
+                    .useInteractiveGuideline(true)    //Tooltips which show all data points. Very nice!
+                    .rightAlignYAxis(true)      //Let's move the y-axis to the right side.
+                    .clipEdge(true);
+
+      //Format x-axis labels with custom function.
+      hdd_chart.xAxis
+          .tickFormat(function(d) {
+            return d3.time.format('{{ tickFormat }}')(new Date(d * 1000))
+      });
+
+      hdd_chart.yAxis
+          .tickFormat(function(d) { return d3.format(",.0f")(d) + " IOPS"; });;
+
+      d3.select('#hdd_chart > svg')
+        .datum(hdd_data)
+        .call(hdd_chart);
+
+      nv.utils.windowResize(hdd_chart.update);
+
+      return hdd_chart;
+    });
+    }
+  render_graph({{ hdd_data|safe }});
+
+});
+</script>
+
+<script type="text/javascript">
+
+$( document ).ready(function() {
+  function render_graph(net_data) {
+    nv.addGraph(function() {
+      var net_chart = nv.models.lineChart()
+                    .margin({right:100})
+                    .height(300)
+                    .x(function(d) { return d[1] })   //We can modify the data accessor functions...
+                    .y(function(d) { return d[0] })   //...in case your data is formatted differently.
+                    .useInteractiveGuideline(true)    //Tooltips which show all data points. Very nice!
+                    .rightAlignYAxis(true)      //Let's move the y-axis to the right side.
+                    .clipEdge(true);
+
+      //Format x-axis labels with custom function.
+      net_chart.xAxis
+          .tickFormat(function(d) {
+            return d3.time.format('{{ tickFormat }}')(new Date(d * 1000))
+      });
+
+      net_chart.yAxis
+          .tickFormat(function(d) { return d3.format(",.0f")(d) + " KiB/s"; });;
+
+      d3.select('#net_chart > svg')
+        .datum(net_data)
+        .call(net_chart);
+
+      nv.utils.windowResize(net_chart.update);
+
+      return net_chart;
+    });
+    }
+  render_graph({{ net_data|safe }});
+
+});
+</script>
+
+{% endblock %}

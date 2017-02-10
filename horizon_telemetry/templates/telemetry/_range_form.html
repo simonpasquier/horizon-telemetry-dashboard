@@ -1,0 +1,12 @@
+{% load i18n %}
+
+  <div class="box-header with-border">
+    <h3 class="box-title">{% trans "Filter Data" %}</h3>
+  </div>
+    <form class="form-inline" id="date_form" method="get" action="?">{% csrf_token %}
+      <div class="datepicker form-group">
+        <p>Select time period to filter displayed data:</p>
+        <span>{% trans "From" %}: {{ dateform.start }} </span><span>{% trans "To" %}: {{ dateform.end }} </span>
+        <button type="submit" class="btn btn-default btn-sm">{% trans "Submit" %}</button>
+      </div>
+    </form>

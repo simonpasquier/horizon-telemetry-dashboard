@@ -1,0 +1,2 @@
+horizon>=2015.0.7
+XStatic-D32

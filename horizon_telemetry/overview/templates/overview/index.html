@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% load i18n %}
+
+{% block title %}{% trans "Instance Overview" %}{% endblock %}
+
+{% block page_header %}
+{% include "horizon/common/_page_header.html" with title=_("Overview") %}
+{% endblock page_header %}
+
+{% block main %}
+
+{% comment %}
+{% include "horizon/common/_limit_summary.html" %}
+{% if simple_tenant_usage_enabled %}
+{% include "horizon/common/_usage_summary.html" %}
+{% endif %}
+{% endcomment %}
+
+{{ table.render }}
+{% endblock %}
+
+{% block js %}
+{{ block.super }}
+<script type="text/javascript">
+function graphs() {
+    var graphite_endpoint = "{% url 'horizon:telemetry:overview:render_graphite' %}",
+        graph_height = 50,
+        graph_width = ($("#main_content").width() - 45) / 4,
+        name_column = $("body").find(".telemetry_name_column > *");
+
+    draw_axis('usage', 2, 7, graph_width);
+    draw_graphs("table tbody tr", graphite_endpoint, graph_height, graph_width);
+    name_column.each(function(i,d) { 
+        d.style.width=graph_width + "px" 
+    });
+}
+$(document).ready(graphs);
+</script>
+{% endblock %}

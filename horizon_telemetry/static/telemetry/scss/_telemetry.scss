@@ -1,0 +1,35 @@
+
+.telemetry_details_heading {
+  margin: 0 0 40px 0;
+}
+
+.telemetry_name_column > * {
+  font-size: 14px;
+  padding-left: 15px;
+}
+
+.nvd3_chart {
+  height: 300px; 
+  margin: 30px 0 15px 0;
+}
+
+.chart-container > .row > div {
+  margin-top: 20px;
+  margin-bottom: 10px;
+  strong {
+    font-size: 16px;
+  }
+}
+
+.radial-progress-bar > svg {
+  width: auto;
+  height: auto;
+  margin: 0 auto;
+  .rbc-label-start {
+    font-family: Helvetica, Arial;
+    font-weight: bold;
+    font-size: 14px;
+    fill: #fff;
+  }
+}
+

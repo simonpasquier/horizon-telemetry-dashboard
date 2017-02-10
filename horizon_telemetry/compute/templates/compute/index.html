@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% load i18n horizon humanize sizeformat graph_helpers %}
+
+{% block title %}{% trans "Compute nodes" %}{% endblock %}
+
+{% block page_header %}
+{% include "horizon/common/_page_header.html" with title=_("Compute Nodes") %}
+{% endblock page_header %}
+
+{% block main %}
+
+<div class="chart-container">
+<h3>{% trans "Compute Nodes Telemetry" %}</h3>
+  <div class="row">
+    {% for row in table.get_rows %}
+    <div class="col-lg-3 col-md-4 col-xs-6 text-center">
+      <div>
+        <div id="chart_{{ row.datum.hypervisor_hostname|replace }}" class="radial-progress-bar"></div>
+        <strong>{{ row.datum.hypervisor_hostname }}</strong>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{{ table.render }}
+{% endblock %}
+{% block js %}
+
+{{ block.super }}
+
+<script type="text/javascript">
+
+{% for row in table.get_rows %}
+
+function draw_chart_{{ row.datum.hypervisor_hostname|replace }}(){
+  var placeholder = '#chart_{{ row.datum.hypervisor_hostname|replace }}';
+  var chart = new RadialProgressChart(placeholder, {
+    diameter: 40,
+    shadow: {
+      width: 1
+    },
+    series: [{
+      labelStart: 'HDD',
+      value: 0,
+      color: {
+        solid: '#006476'
+      },
+    }, {
+      labelStart: 'CPU',
+      value: 0,
+      color: {
+        solid: '#0088A0'
+      },
+    }, {
+      labelStart: 'MEM',
+      value: 50,
+      value: 0,
+      color: {
+        solid: '#00BEDF'
+      },
+    }]
+  });
+
+  update_chart_{{ row.datum.hypervisor_hostname|replace }}(chart);
+}
+
+function update_chart_{{ row.datum.hypervisor_hostname|replace }}(chart){
+  d3.json("{{ row.datum.hypervisor_hostname }}/data", function(error, json) {
+    if (error) return console.warn(error);
+
+    chart.update({series:[{value: json.disk}, {value: json.cpu}, {value: json.memory}]});
+  });
+
+  setTimeout(function() {
+    update_chart_{{ row.datum.hypervisor_hostname|replace }}(chart);
+    console.log('{{ row.datum.hypervisor_hostname }} chart updated');
+  }, 60000);
+}
+
+$(document).ready(function() {
+  draw_chart_{{ row.datum.hypervisor_hostname|replace }}();
+});
+{% endfor %}
+
+</script>
+
+{% endblock %}
