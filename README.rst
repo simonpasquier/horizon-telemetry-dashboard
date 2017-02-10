@@ -2,29 +2,29 @@
 Horizon Telemetry Panels
 ========================
 
-Simple Telemetry Dashboard for Horizon. Uses Cubism.js for ploting data from Graphite.
-
+A simple Telemetry Dashboard for Horizon showing metrics for virtual instances
+and physical nodes. It uses Cubism.js and D3 for graphing the metrics and
+relies on InfluxDB as the metric backend.
 
 Settings
 ========
 
+.. code-block:: python
+
+    INFLUXDB_HOST = 'mtr.example.com'
+    #INFLUXDB_PORT = '8086'
+    INFLUXDB_USERNAME = 'horizon'
+    INFLUXDB_PASSWORD = 'supersecret'
+    INFLUXDB_DATABASE = 'lma'
+    ENVIRONMENT_LABEL = 'default_prd'
+
+You may also specify the servers which will be showed in the "Control Nodes" panel.
 
 .. code-block:: python
 
-    GRAPHITE_ENDPOINT = 'http://mygraphite.com:80'
-    
-    GRAPHITE_PREFIX = 'default_prd'
-
-	AUTHENTICATION_URLS += ['horizon_telemetry.graphite_urls']
-
-
-Optionaly you can specify Control Nodes mapping which is used for control panel where we don't know who is controller.
-
-.. code-block:: python
-
-    OPENSTACK_CONTROL_ZONE = 'internal'
-
-    OPENSTACK_CONTROL_NODES = {
-        'ctl01': 'ctl01.vpc.prd.tcp.cloudlab.cz'
-    }
+    OPENSTACK_CONTROL_NODES = [
+        'ctl01.example.com'
+        'ctl02.example.com'
+        'ctl03.example.com'
+    ]
 
