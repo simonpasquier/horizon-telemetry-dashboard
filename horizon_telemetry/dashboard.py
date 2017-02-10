@@ -1,4 +1,3 @@
-
 from django.utils.translation import ugettext_lazy as _
 
 import horizon
@@ -9,7 +8,7 @@ class Telemetry(horizon.Dashboard):
     slug = "telemetry"
     panels = ('overview', 'compute', 'control')
     default_panel = 'overview'
-    #permissions = ('openstack.roles.admin',)
+
 
 horizon.register(Telemetry)
 
