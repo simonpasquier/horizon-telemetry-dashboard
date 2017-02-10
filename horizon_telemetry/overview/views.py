@@ -1,19 +1,17 @@
-
 import datetime
 import json
 from datetime import datetime
 
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.template.defaultfilters import capfirst, floatformat
 from django.utils.translation import ugettext_lazy as _
-# for data view can be deleted
 from django.views.generic import TemplateView
 from horizon import exceptions, forms
 from horizon.utils import csvbase
-# for data view can be deleted
+
 from horizon_telemetry.utils import graphite_context
-from horizon_telemetry.utils.graphite import get_instance_data
+from horizon_telemetry.utils import influxdb_client
 from openstack_dashboard import api, usage
 from openstack_dashboard.dashboards.project.overview.views import \
     ProjectUsageCsvRenderer
@@ -39,42 +37,77 @@ class ProjectOverview(usage.UsageView):
         return self.usage.get_instances()
 
 
-from horizon_telemetry.utils.graphite import get_instance_data
+class ProxyView(TemplateView):
+    """Proxy class to InfluxDB
 
+    It translates requests from Cubism/D3 clients to InfluxDB queries and
+    convert the datapoints to a compatible format.
+    """
 
-class DataView(TemplateView):
-    template_name = 'telemetry/test.html'
+    METRIC_PARAMETERS = {
+        'virt_cpu_time': ['instance_id'],
+        'virt_disk_octets_read': ['instance_id'],
+        'virt_disk_octets_write': ['instance_id'],
+        'virt_if_octets_rx': ['instance_id'],
+        'virt_if_octets_tx': ['instance_id'],
+    }
 
-    def get_usage_list(self, start, end):
-        instances = []
-        terminated_instances = []
-        usage = api.nova.usage_get(self.request, self.project_id, start, end)
-        # Attribute may not exist if there are no instances
-        if hasattr(usage, 'server_usages'):
-            for server_usage in usage.server_usages:
-                # This is a way to phrase uptime in a way that is compatible
-                # with the 'timesince' filter. (Use of local time intentional.)
-                if server_usage['ended_at']:
-                    terminated_instances.append(server_usage)
-                else:
-                    instances.append(server_usage)
-        usage.server_usages = instances
-        return (usage,)
+    def get(self, request, *args, **kwargs):
+        for param in ('metric', 'start', 'end', 'interval'):
+            if param not in request.GET:
+                return HttpResponseBadRequest(
+                    '{{"error":"{} parameter is required"}}'.format(param),
+                    content_type='application/json')
 
-    def get(self, *args, **kwargs):
+        metric = request.GET.get('metric')
+        start = request.GET.get('start')
+        end = request.GET.get('end')
+        interval = request.GET.get('interval')
 
-        self.project_id = self.kwargs.get('project_id',
-                                          self.request.user.tenant_id)
+        for parameter in self.METRIC_PARAMETERS.get(metric, []):
+            if param not in request.GET:
+                return HttpResponseBadRequest(
+                    '{{"error":"{} parameter is required"}}'.format(param),
+                    content_type='application/json')
+        # TODO: check that instance_id belongs to user if not admin
 
-        today = datetime.now()
-        instances = self.get_usage_list(today, datetime.now())
+        where = ''
+        group = ['time({}s)'.format(interval)]
+        if metric == 'virt_cpu_time':
+            select = 'mean("value") / 10000000 as value'
+            where = '"instance_id" =~ /^{}$/'.format(request.GET.get('instance_id'))
+        elif metric in ['virt_disk_octets_read', 'virt_disk_octets_write']:
+            select = 'mean("value") as value'
+            where = '"instance_id" =~ /^{}$/'.format(request.GET.get('instance_id'))
+            group.append('device')
+        elif metric in ['virt_if_octets_rx', 'virt_if_octets_tx']:
+            select = 'mean("value") as value'
+            where = '"instance_id" =~ /^{}$/'.format(request.GET.get('instance_id'))
+            group.append('interface')
+        else:
+            return HttpResponseBadRequest(
+                '{{"error":"{} metric is not supported"}}'.format(metric),
+                content_type='application/json')
 
+        where += ' AND environment_label =~ /^{}$/'.format(
+            settings.ENVIRONMENT_LABEL)
+        where += ' AND time >= {}s AND time <= {}s'.format(start, end)
+
+        query = 'SELECT {select} FROM "{measurement}" WHERE {where} GROUP BY {group} fill(0)'.format(
+            select=select,
+            measurement=metric,
+            where=where,
+            group=','.join(group)
+        )
+
+        # sum datapoints from different series (eg InfluxDB tags) into a single
+        # array
         data = []
-
-        for instance in instances[0].to_dict()['server_usages']:
-            instance.update({
-                'cpu': get_instance_data(instance['instance_id'])
-                })
-            data.append(instance)
+        for i, serie in enumerate(influxdb_client.query(query)):
+            for j, point in enumerate(serie):
+                if i == 0:
+                    data.append(point['value'])
+                else:
+                    data[j] += point['value']
 
         return HttpResponse(json.dumps(data), content_type='application/json')

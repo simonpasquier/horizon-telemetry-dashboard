@@ -8,10 +8,10 @@ from django.utils import six
 def get_instance_data(instance_id, date_from=None, date_until=None):
 
     targets = {
-        'cpu': 'asPercent(sumSeries(default_prd.{0}.libvirt.virt_vcpu.*), default_prd.{0}.libvirt.virt_cpu_total)'.format(instance_id),
-        'storage_write': 'integral(nonNegativeDerivative(sumSeries(default_prd.{0}.libvirt.disk_ops.*.write)))'.format(instance_id),
-        'storage_read': 'integral(nonNegativeDerivative(sumSeries(default_prd.{0}.libvirt.disk_ops.*.read)))'.format(instance_id),
-        'network_in': 'integral(nonNegativeDerivative(sumSeries(default_prd.{0}.libvirt.if_octets.*.rx)))'.format(instance_id),
+        'cpu': 'virt_cpu_util?instance_id={}'.format(instance_id),
+        'storage_write': 'virt_disk_ops_write?instance_id={}'.format(instance_id),
+        'storage_read': 'virt_disk_ops_read?instance_id={}'.format(instance_id),
+        'network_in': ''.format(instance_id),
         'network_out': 'integral(nonNegativeDerivative(sumSeries(default_prd.{0}.libvirt.if_octets.*.tx)))'.format(instance_id)
     }
 

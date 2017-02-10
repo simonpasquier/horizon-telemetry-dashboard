@@ -1,10 +1,8 @@
-
 from django.conf.urls import patterns, url
-from .views import ProjectOverview, DataView
-from horizon_telemetry.utils.graphite_proxy import graphite_render
+from .views import ProjectOverview, ProxyView
 
-urlpatterns = patterns('',
-                       url(r'^data$', DataView.as_view(), name='data'),
-                       url(r'^$', ProjectOverview.as_view(), name='index'),
-                       url(r'^render/', graphite_render, name='render_graphite'),
-                       )
+urlpatterns = patterns(
+    '',
+    url(r'^proxy/', ProxyView.as_view(), name='proxy'),
+    url(r'^$', ProjectOverview.as_view(), name='index'),
+)

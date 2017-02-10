@@ -1,12 +1,9 @@
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
-
-from horizon import tables
-
 from django.utils.html import format_html
 
-
-from horizon_telemetry.utils.tables import InstanceGraphColumn, InstanceGraphColumnTwoRow, GraphColumn
+from horizon import tables
+from horizon_telemetry.utils.tables import InstanceGraphColumn, InstanceGraphColumnTwoRow
 
 
 def link_detail(datum=None):
@@ -16,42 +13,32 @@ def link_detail(datum=None):
         kwargs={'instance_id': datum['instance_id']}) + '?tab=instance_details__telemetry'
 
 
-class InstanceCPUGraphColumn(GraphColumn):
-
-    def get_metric(self, datum):
-        uuid = self.get_uuid(datum)
-        return 'asPercent(sumSeries(default_prd.{0}.libvirt.virt_vcpu.*), default_prd.{0}.libvirt.virt_cpu_total)'.format(uuid)
-
-
 class ProjectUsageTable(tables.DataTable):
     name = tables.Column(
-        'name', verbose_name=_('Name'),
+        'name',
+        verbose_name=_('Name'),
         link=link_detail,
         classes=['telemetry_name_column']
     )
 
-    cpu_util = InstanceCPUGraphColumn(
+    cpu_util = InstanceGraphColumn(
         'cpu_util',
-        verbose_name=_('CPU Utilisation'),
-        graph_id="cpu_util"
+        verbose_name=_('CPU Utilization'),
+        metric='virt_cpu_time'
     )
 
     network = InstanceGraphColumnTwoRow(
         'network',
-        verbose_name=_('Net In/Out'),
-        graph_id_first="network_in",
-        graph_metric_first='libvirt.if_octets.*.rx',
-        graph_id_second="network_out",
-        graph_metric_second='libvirt.if_octets.*.tx'
+        verbose_name=_('Net Rx/Tx'),
+        metric="virt_if_octets_rx",
+        second_metric="virt_if_octets_tx",
     )
 
     storage_write = InstanceGraphColumnTwoRow(
         'storage',
-        verbose_name=_('HDD Write/Read'),
-        graph_id_first="storage_write",
-        graph_metric_first='libvirt.disk_ops.*.write',
-        graph_id_second="storage_read",
-        graph_metric_second='libvirt.disk_ops.*.read'
+        verbose_name=_('Disk Write/Read'),
+        metric="virt_disk_octets_write",
+        second_metric="virt_disk_octets_read",
     )
 
     def get_object_id(self, datum):
