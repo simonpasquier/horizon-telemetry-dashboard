@@ -1,5 +1,5 @@
-horizon-telemetry-dashboard (0.1) trusty; urgency=medium
+horizon-telemetry-dashboard (1.0) trusty; urgency=medium
 
-  * initial release
+  * Initial release
 
- -- Michael Kuty <michael.kuty@tcpcloud.eu>  Mon, 02 Sep 2015 20:43:12 +0200
+ -- Simon Pasquier <spasquier@mirantis.com>  Fri, 10 Feb 2017 10:48:20 +0100
