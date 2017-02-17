@@ -41,7 +41,7 @@ class ProxyView(TemplateView):
     """Proxy class to InfluxDB
 
     It translates requests from Cubism/D3 clients to InfluxDB queries and
-    convert the datapoints to a compatible format.
+    convert the datapoints to a compatible format (eg a list of values).
     """
 
     METRIC_PARAMETERS = {

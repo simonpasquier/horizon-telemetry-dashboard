@@ -108,4 +108,3 @@ class DataView(TemplateView):
         data = get_hypervisor_data(id)
 
         return HttpResponse(json.dumps(data), content_type='application/json')
-
