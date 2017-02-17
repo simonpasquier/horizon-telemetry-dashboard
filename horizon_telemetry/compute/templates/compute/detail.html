@@ -20,25 +20,25 @@
   </div>
   <div class="col-md-12">
     <div id="cpu_chart" class="nvd3_chart">
-      <h2>CPU utilisation</h2>
+      <h2>CPU utilization</h2>
       <svg></svg>
     </div>
   </div>
   <div class="col-md-12">
     <div id="mem_chart" class="nvd3_chart">
-      <h2>Memory utilisation</h2>
+      <h2>Memory utilization</h2>
       <svg></svg>
     </div>
   </div>
   <div class="col-md-12">
     <div id="hdd_chart" class="nvd3_chart">
-      <h2>HDD I/O operations</h2>
+      <h2>Disk I/O</h2>
       <svg></svg>
     </div>
   </div>
   <div class="col-md-12">
     <div id="net_chart" class="nvd3_chart">
-      <h2>Network I/O operations</h2>
+      <h2>Network I/O</h2>
       <svg></svg>
     </div>
   </div>
@@ -77,9 +77,8 @@ $( document ).ready(function() {
 
       return cpu_chart;
     });
-    }
+  }
   render_graph({{ cpu_data|safe }});
-
 });
 </script>
 
@@ -116,9 +115,8 @@ $( document ).ready(function() {
 
       return mem_chart;
     });
-    }
+  }
   render_graph({{ mem_data|safe }});
-
 });
 </script>
 
@@ -143,7 +141,7 @@ $( document ).ready(function() {
       });
 
       hdd_chart.yAxis
-          .tickFormat(function(d) { return d3.format(",.0f")(d) + " IOPS"; });;
+          .tickFormat(function(d) { return d3.format(",.0f")(d) + " B/s"; });;
 
       d3.select('#hdd_chart > svg')
         .datum(hdd_data)
@@ -153,9 +151,8 @@ $( document ).ready(function() {
 
       return hdd_chart;
     });
-    }
+  }
   render_graph({{ hdd_data|safe }});
-
 });
 </script>
 
@@ -180,7 +177,7 @@ $( document ).ready(function() {
       });
 
       net_chart.yAxis
-          .tickFormat(function(d) { return d3.format(",.0f")(d) + " KiB/s"; });;
+          .tickFormat(function(d) { return d3.format(",.0f")(d) + " B/s"; });;
 
       d3.select('#net_chart > svg')
         .datum(net_data)
@@ -190,9 +187,8 @@ $( document ).ready(function() {
 
       return net_chart;
     });
-    }
+  }
   render_graph({{ net_data|safe }});
-
 });
 </script>
 

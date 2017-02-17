@@ -28,3 +28,17 @@ You may also specify the servers which will be showed in the "Control Nodes" pan
         'ctl03.example.com'
     ]
 
+You may also specify the network interface(s) that should be graphed for the
+compute nodes.
+
+.. code-block:: python
+
+    # For OpenContrail
+    TELEMETRY_COMPUTE_INTERFACES = [
+        'vhost0'
+    ]
+
+    # For OpenvSwitch
+    TELEMETRY_COMPUTE_INTERFACES = [
+        'br-mgmt', 'br-mesh'
+    ]

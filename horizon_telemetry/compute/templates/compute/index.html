@@ -66,10 +66,16 @@ function draw_chart_{{ row.datum.hypervisor_hostname|replace }}(){
 }
 
 function update_chart_{{ row.datum.hypervisor_hostname|replace }}(chart){
-  d3.json("{{ row.datum.hypervisor_hostname }}/data", function(error, json) {
+  d3.json("{{ row.datum.hypervisor_hostname }}/data", function(error, data) {
     if (error) return console.warn(error);
 
-    chart.update({series:[{value: json.disk}, {value: json.cpu}, {value: json.memory}]});
+    chart.update({
+        series:[
+            {value: data.disk},
+            {value: data.cpu},
+            {value: data.memory}
+        ]
+    });
   });
 
   setTimeout(function() {
