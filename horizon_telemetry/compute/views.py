@@ -90,7 +90,7 @@ class AdminDetailView(TemplateView):
         context['net_data'] = json.dumps(
             get_host_network_metric(settings.ENVIRONMENT_LABEL, node,
                                     date_range['start'], date_range['end'],
-                                   getattr(settings, 'TELEMETRY_COMPUTE_INTERFACES', None))
+                                    getattr(settings, 'TELEMETRY_COMPUTE_INTERFACES', None))
         )
 
         return context

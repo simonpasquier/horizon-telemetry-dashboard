@@ -1,16 +1,20 @@
 import datetime
 import json
+
+
+from django.conf import settings
 from django.http import HttpResponse
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import TemplateView
 from horizon import exceptions, tables
 from horizon_telemetry.forms import DateForm
-from horizon_telemetry.utils import graphite_context
-from horizon_telemetry.utils.graphite import (get_cpu_data,
-                                              get_mem_data,
-                                              get_hdd_data,
-                                              get_ctl_net_data,
-                                              get_hypervisor_data)
+from horizon_telemetry.utils.influxdb_client import (get_host_usage_metrics,
+                                                     get_host_cpu_metric,
+                                                     get_host_disk_metric,
+                                                     get_host_memory_metric,
+                                                     get_host_network_metric)
+from horizon_telemetry.utils.memoized import memoized
+
 from openstack_dashboard import api
 
 from . import tables as project_tables
@@ -22,25 +26,24 @@ class AdminIndexView(tables.DataTableView):
     template_name = 'telemetry/control/index.html'
 
     def get_data(self):
-        hypervisors = []
+        controllers = []
         try:
-            hypervisors = get_all_controllers(self.request)
+            controllers = get_all_controllers(self.request)
         except Exception:
             exceptions.handle(self.request,
-                              _('Unable to retrieve control nodes informations.'))
+                              _('Unable to retrieve information about control nodes.'))
 
-        return hypervisors
+        return controllers
 
-    @graphite_context
-    def get_context_data(self, **kwargs):
-        context = super(AdminIndexView, self).get_context_data(**kwargs)
-        try:
-            context["stats"] = api.nova.hypervisor_stats(self.request)
-        except Exception:
-            exceptions.handle(self.request,
-                              _('Unable to retrieve control nodes statistics.'))
-
-        return context
+#    def get_context_data(self, **kwargs):
+#        context = super(AdminIndexView, self).get_context_data(**kwargs)
+#        try:
+#            context["stats"] = api.nova.hypervisor_stats(self.request)
+#        except Exception:
+#            exceptions.handle(self.request,
+#                              _('Unable to retrieve statistics about control nodes.'))
+#
+#        return context
 
 
 class AdminDetailView(TemplateView):
@@ -49,68 +52,50 @@ class AdminDetailView(TemplateView):
     def get_data(self):
         pass
 
-    @graphite_context
     def get_context_data(self, **kwargs):
         context = super(AdminDetailView, self).get_context_data(**kwargs)
 
-        # NVD3 graph - date filter and graph data
         today = datetime.date.today()
-        yesterday = datetime.date.today() - datetime.timedelta(1)
-
-        cleaned_data = {
-            'start': self.request.GET.get("start", yesterday),
+        date_range = {
+            'start': self.request.GET.get("start", today - datetime.timedelta(1)),
             'end': self.request.GET.get('end', today)
         }
-        form = DateForm(cleaned_data)
+        form = DateForm(date_range)
 
-        self.request.session.update(cleaned_data)
+        self.request.session.update(date_range)
 
-        if not isinstance(cleaned_data['start'], datetime.date):
-            cleaned_data['start'] = datetime.datetime.strptime(cleaned_data['start'], "%Y-%m-%d").date()
-            cleaned_data['end'] = datetime.datetime.strptime(cleaned_data['end'], "%Y-%m-%d").date()
+        # convert inputs to date objects
+        if not isinstance(date_range['start'], datetime.date):
+            date_range['start'] = datetime.datetime.strptime(date_range['start'], "%Y-%m-%d").date()
+            date_range['end'] = datetime.datetime.strptime(date_range['end'], "%Y-%m-%d").date()
 
-        timeDiff = cleaned_data['end'] - cleaned_data['start']
-        timeDiff = timeDiff.total_seconds() / 3600
-
-        if timeDiff > 24:
+        hour_interval = (date_range['end'] - date_range['start']).total_seconds() / 3600
+        if hour_interval > 24:
             context['tickFormat'] = "%x"
         else:
             context['tickFormat'] = "%H:%M"
 
         context['dateform'] = form
-
-        controllers = get_all_controllers(self.request)
-        node = context['hypervisor']
-
-        context['node'] = node
+        node = context['node'] = context['control']
 
         context['cpu_data'] = json.dumps(
-            get_cpu_data(node, cleaned_data['start'], cleaned_data['end']
-                         ))
-
+            get_host_cpu_metric(settings.ENVIRONMENT_LABEL, node,
+                                date_range['start'], date_range['end'])
+        )
         context['mem_data'] = json.dumps(
-            get_mem_data(node, cleaned_data['start'], cleaned_data['end']
-                         ))
-
+            get_host_memory_metric(settings.ENVIRONMENT_LABEL, node,
+                                   date_range['start'], date_range['end'])
+        )
         context['hdd_data'] = json.dumps(
-            get_hdd_data(node, cleaned_data['start'], cleaned_data['end']
-                         ))
-
+            get_host_disk_metric(settings.ENVIRONMENT_LABEL, node,
+                                 date_range['start'], date_range['end'])
+        )
         context['net_data'] = json.dumps(
-            get_ctl_net_data(node, cleaned_data['start'], cleaned_data['end']
-                             ))
+            get_host_network_metric(settings.ENVIRONMENT_LABEL, node,
+                                    date_range['start'], date_range['end'])
+        )
 
         return context
-
-
-from horizon_telemetry.utils.memoized import memoized
-
-# thats all !
-@memoized
-def get_cached_data(id):
-    """Called just once in one minute"""
-
-    return get_hypervisor_data(id)
 
 
 class DataView(TemplateView):
@@ -119,14 +104,7 @@ class DataView(TemplateView):
     template_name = 'telemetry/dummy.html'
 
     def get(self, *args, **kwargs):
-
-        hypervisors = get_all_controllers(self.request)
-
-        id = self.kwargs.get('hypervisor')
-
-        # this is evauluate data just once..
-        print "Loading from %s" % id
-        data = get_cached_data(id)
-        print "Loaded from %s" % id
+        data = get_host_usage_metric(settings.ENVIRONMENT_LABEL,
+                                     self.kwargs.get('control'))
 
         return HttpResponse(json.dumps(data), content_type='application/json')

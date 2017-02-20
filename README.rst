@@ -22,11 +22,11 @@ You may also specify the servers which will be showed in the "Control Nodes" pan
 
 .. code-block:: python
 
-    OPENSTACK_CONTROL_NODES = [
-        'ctl01.example.com'
-        'ctl02.example.com'
-        'ctl03.example.com'
-    ]
+    OPENSTACK_CONTROL_NODES = {
+        'ctl01': 'ctl01.example.com',
+        'ctl02': 'ctl02.example.com',
+        'ctl03': 'ctl03.example.com',
+    }
 
 You may also specify the network interface(s) that should be graphed for the
 compute nodes.

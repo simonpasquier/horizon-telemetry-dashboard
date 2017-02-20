@@ -1,48 +1,46 @@
-
 from __future__ import absolute_import
 
+import collections
 import functools
-from django.conf import settings
 from datetime import datetime, timedelta
+
+from django.conf import settings
 
 CACHE_EXPIRATION = getattr(settings, 'CACHE_EXPIRATION', 60)
 
 
-class memoized(object):
+CachedItem = collections.namedtuple('CachedItem', 'value', 'timestamp')
 
-    """Decorator. Caches a function's return value each time it is called.
+class memoized(object):
+    """Decorator caching the return value until it expires.
+
     If called later with the same arguments, the cached value is returned
-    (not reevaluated), unless more than expiration passed.
+    (not reevaluated) until the expiration period has elapsed.
     """
 
     def __init__(self, func):
         self.func = func
         self.cache = {}
 
-    def is_actual(self, id):
-        expirated = datetime.now() - timedelta(seconds=CACHE_EXPIRATION)
-        if id in self.cache \
-                and self.cache[id][0] >= expirated:
-            return True
-        return False
+    def is_valid(self, _id):
+        expired_time = datetime.now() - timedelta(seconds=CACHE_EXPIRATION)
+        return _id in self.cache and \
+            self.cache[_id].timestamp + timedelta(seconds=CACHE_EXPIRATION) < datetime.now()
 
     def __call__(self, *args):
-        
-        # gets first function argument as cache ID
-        # for example ctl01 will be cache ID
-        id = args[0]
-        if self.is_actual(id):
-            return self.cache[id][1]
-        else:
-            print "Now we call graphite for {}".format(id)
-            content = self.func(*args)
-            self.cache[id] = datetime.now(), content
-            return content
+        # use the first function argument as cache ID
+        _id = args[0]
+        if not self.is_valid(_id):
+            v = self.func(*args)
+            self.cache[_id].timestamp = datetime.now()
+            self.cache[_id].value = v
+
+        return self.cache[_id].value
 
     def __repr__(self):
-        '''Return the function's docstring.'''
+        """Return the function's docstring."""
         return self.func.__doc__
 
     def __get__(self, obj, objtype):
-        '''Support instance methods.'''
+        """Support instance methods."""
         return functools.partial(self.__call__, obj)

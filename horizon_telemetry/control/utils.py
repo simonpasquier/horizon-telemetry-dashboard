@@ -9,7 +9,7 @@ from openstack_dashboard.api import nova
 
 
 def get_all_controllers(self):
-    """returns control nodes from settings
+    """returns control nodes from the settings
     """
     _nodes = getattr(settings, 'OPENSTACK_CONTROL_NODES', {})
     nodes = []
