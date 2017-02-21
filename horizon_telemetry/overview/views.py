@@ -3,14 +3,15 @@ import json
 from datetime import datetime
 
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import (HttpResponse,
+                         HttpResponseBadRequest,
+                         HttpResponseNotFound)
 from django.template.defaultfilters import capfirst, floatformat
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import TemplateView
 from horizon import exceptions, forms
 from horizon.utils import csvbase
 
-from horizon_telemetry.utils import graphite_context
 from horizon_telemetry.utils import influxdb_client
 from openstack_dashboard import api, usage
 from openstack_dashboard.dashboards.project.overview.views import \
@@ -25,11 +26,9 @@ class ProjectOverview(usage.UsageView):
     template_name = 'telemetry/overview/index.html'
     csv_response_class = ProjectUsageCsvRenderer
 
-    @graphite_context
     def get_context_data(self, *args, **kwargs):
         context = super(ProjectOverview, self).get_context_data(
             *args, **kwargs)
-
         return context
 
     def get_data(self):
@@ -69,20 +68,28 @@ class ProxyView(TemplateView):
                 return HttpResponseBadRequest(
                     '{{"error":"{} parameter is required"}}'.format(param),
                     content_type='application/json')
-        # TODO: check that instance_id belongs to user if not admin
+
+        instance_id = request.GET.get('instance_id')
+        if instance_id:
+            try:
+                api.nova.server_get(self.request, instance_id)
+            except Exception:
+                return HttpResponseNotFound(
+                    '{{"error":"instance {} not found"}}'.format(instance_id),
+                    content_type='application/json')
 
         where = ''
         group = ['time({}s)'.format(interval)]
         if metric == 'virt_cpu_time':
             select = 'mean("value") / 10000000 as value'
-            where = '"instance_id" =~ /^{}$/'.format(request.GET.get('instance_id'))
+            where = '"instance_id" =~ /^{}$/'.format(instance_id)
         elif metric in ['virt_disk_octets_read', 'virt_disk_octets_write']:
             select = 'mean("value") as value'
-            where = '"instance_id" =~ /^{}$/'.format(request.GET.get('instance_id'))
+            where = '"instance_id" =~ /^{}$/'.format(instance_id)
             group.append('device')
         elif metric in ['virt_if_octets_rx', 'virt_if_octets_tx']:
             select = 'mean("value") as value'
-            where = '"instance_id" =~ /^{}$/'.format(request.GET.get('instance_id'))
+            where = '"instance_id" =~ /^{}$/'.format(instance_id)
             group.append('interface')
         else:
             return HttpResponseBadRequest(

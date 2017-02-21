@@ -13,9 +13,6 @@ from horizon_telemetry.utils.influxdb_client import (get_host_usage_metrics,
                                                      get_host_disk_metric,
                                                      get_host_memory_metric,
                                                      get_host_network_metric)
-from horizon_telemetry.utils.memoized import memoized
-
-from openstack_dashboard import api
 
 from . import tables as project_tables
 from .utils import get_all_controllers
@@ -34,16 +31,6 @@ class AdminIndexView(tables.DataTableView):
                               _('Unable to retrieve information about control nodes.'))
 
         return controllers
-
-#    def get_context_data(self, **kwargs):
-#        context = super(AdminIndexView, self).get_context_data(**kwargs)
-#        try:
-#            context["stats"] = api.nova.hypervisor_stats(self.request)
-#        except Exception:
-#            exceptions.handle(self.request,
-#                              _('Unable to retrieve statistics about control nodes.'))
-#
-#        return context
 
 
 class AdminDetailView(TemplateView):
