@@ -100,7 +100,7 @@ class DataView(TemplateView):
     template_name = 'telemetry/dummy.html'
 
     def get(self, *args, **kwargs):
-        data = get_host_usage_metric(settings.ENVIRONMENT_LABEL,
-                                     self.kwargs.get('hypervisor'))
+        data = get_host_usage_metrics(settings.ENVIRONMENT_LABEL,
+                                      self.kwargs.get('hypervisor'))
 
         return HttpResponse(json.dumps(data), content_type='application/json')

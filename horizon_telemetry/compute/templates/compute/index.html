@@ -41,7 +41,7 @@ function draw_chart_{{ row.datum.hypervisor_hostname|replace }}(){
       width: 1
     },
     series: [{
-      labelStart: 'HDD',
+      labelStart: 'Disk',
       value: 0,
       color: {
         solid: '#006476'
@@ -53,7 +53,7 @@ function draw_chart_{{ row.datum.hypervisor_hostname|replace }}(){
         solid: '#0088A0'
       },
     }, {
-      labelStart: 'MEM',
+      labelStart: 'RAM',
       value: 50,
       value: 0,
       color: {
@@ -62,10 +62,10 @@ function draw_chart_{{ row.datum.hypervisor_hostname|replace }}(){
     }]
   });
 
-  update_chart_{{ row.datum.hypervisor_hostname|replace }}(chart);
+  refresh_chart_{{ row.datum.hypervisor_hostname|replace }}(chart);
 }
 
-function update_chart_{{ row.datum.hypervisor_hostname|replace }}(chart){
+function refresh_chart_{{ row.datum.hypervisor_hostname|replace }}(chart){
   d3.json("{{ row.datum.hypervisor_hostname }}/data", function(error, data) {
     if (error) return console.warn(error);
 
@@ -78,9 +78,9 @@ function update_chart_{{ row.datum.hypervisor_hostname|replace }}(chart){
     });
   });
 
+  // refresh the chart every minute
   setTimeout(function() {
-    update_chart_{{ row.datum.hypervisor_hostname|replace }}(chart);
-    console.log('{{ row.datum.hypervisor_hostname }} chart updated');
+    refresh_chart_{{ row.datum.hypervisor_hostname|replace }}(chart);
   }, 60000);
 }
 

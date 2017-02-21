@@ -74,7 +74,7 @@ def query(query):
     return
 
 def get_host_usage_metrics(environment, host, interval=600):
-    """Return key usage metrics for the host in the last interval
+    """Return key usage metrics for the host in the last interval.
 
     {
         'cpu': 25,
@@ -82,21 +82,15 @@ def get_host_usage_metrics(environment, host, interval=600):
         'disk': 10,
     }
     """
-    params = {
-        "interval": interval,
-        "host": _get_short_hostname(host),
-        "environment_label": environment,
-    }
-
     where = "time > now() - {interval}s and hostname='{host}' and environment_label='{environment_label}'".format(
         interval=interval,
-        host=host,
+        host=_get_short_hostname(host),
         environment_label=environment,
     )
     queries = {
         "cpu": "select (100 - mean(value)) as value from cpu_idle where {}".format(where),
-        "memory": "select last(value) from /^memory_(used|free|cached|buffered)/ where {}".format(where),
-        "disk": "select last(value) from fs_space_percent_free where {} and fs='/'".format(where),
+        "memory": "select last(value) as value from /^memory_(used|free|cached|buffered)/ where {}".format(where),
+        "disk": "select last(value) as value from fs_space_percent_used where {} and fs='/'".format(where),
     }
 
     metrics = {}
@@ -107,10 +101,10 @@ def get_host_usage_metrics(environment, host, interval=600):
 
         value = 0
         if label == "memory":
-            total = sum([get_first_value(result, 'memory_{}'.format(i)) for i in ['used', 'free', 'cached', 'buffered']])
-            value = (get_first_value(result, 'memory_used') * 100) / total
+            total = sum([_get_first_value(result, 'memory_{}'.format(i)) for i in ['used', 'free', 'cached', 'buffered']])
+            value = (_get_first_value(result, 'memory_used') * 100) / total
         else:
-            value = get_value(result)
+            value = _get_first_value(result)
         metrics[label] = value
 
     return metrics
