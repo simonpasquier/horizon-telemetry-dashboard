@@ -31,7 +31,7 @@ def _get_host_metric_query(measurement, start, end, environment, host,
     where time >= '{start}' and time < '{end}' + 1d
     and environment_label = '{environment}'
     and hostname = '{host}' {where}
-    group by time({interval}){group} fill(0)""".format(
+    group by time({interval}){group} fill(none)""".format(
         measurement=measurement,
         start=start.isoformat(),
         end=end.isoformat(),
@@ -102,7 +102,8 @@ def get_host_usage_metrics(environment, host, interval=600):
         value = 0
         if label == "memory":
             total = sum([_get_first_value(result, 'memory_{}'.format(i)) for i in ['used', 'free', 'cached', 'buffered']])
-            value = (_get_first_value(result, 'memory_used') * 100) / total
+            if total > 0:
+                value = (_get_first_value(result, 'memory_used') * 100) / total
         else:
             value = _get_first_value(result)
         metrics[label] = value
@@ -158,6 +159,9 @@ def get_host_memory_metric(environment, hostname, start, end):
 
     data = []
     total_memory = sum([_get_first_value(result, m) for m in memory_metrics])
+    if total_memory <= 0:
+        return []
+
     for metric in memory_metrics:
         data.append({
             'key': metric.replace('memory_', '').capitalize(),
@@ -173,7 +177,7 @@ def get_host_network_metric(environment, hostname, start, end, interfaces=None):
         end,
         environment,
         hostname,
-        where='interface =~ /^()$/'.format('|'.join(interfaces)) if interfaces else '',
+        where='interface =~ /^({})$/'.format('|'.join(interfaces)) if interfaces else '',
         group='interface'
     ))
 
